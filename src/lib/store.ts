@@ -99,8 +99,11 @@ export function verifyPassword(password: string, user: User) {
 export async function createUser(input: { name: string; email: string; password: string }) {
   const email = input.email.trim().toLowerCase();
   const password = input.password.trim();
-  if (password.length < 6) {
-    throw new Error("密码至少需要 6 位");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("邮箱格式不正确");
+  }
+  if (password.length < 8) {
+    throw new Error("密码至少需要 8 位");
   }
   const { salt, passwordHash } = hashPassword(password);
   return mutateDb((db) => {

@@ -2,17 +2,22 @@ import type { NextConfig } from "next";
 
 import path from "node:path";
 
+const isDev = process.env.NODE_ENV === "development";
+const scriptSrc = isDev
+  ? `'self' 'unsafe-eval' 'unsafe-inline'`
+  : `'self' 'unsafe-inline'`;
+
 const csp = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-eval' 'unsafe-inline'`,
+  `script-src ${scriptSrc}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob:`,
   `font-src 'self' data:`,
-  `connect-src 'self' https://api.openai.com`,
+  `connect-src 'self' https://api.openai.com ${process.env.OPENAI_BASE_URL || ""}`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,
-].join("; ");
+].filter(Boolean).join("; ");
 
 const nextConfig: NextConfig = {
   output: "standalone",

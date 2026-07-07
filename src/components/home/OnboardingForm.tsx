@@ -29,7 +29,7 @@ export function OnboardingForm({ busy, error, onRegister, onLogin }: Props) {
             <p>登录后可查看报告、流年方向、历史提问和每日行动。</p>
           </div>
           <label className="product-field"><span>邮箱</span><input name="email" type="email" autoComplete="email" required placeholder="请输入注册邮箱" /></label>
-          <label className="product-field"><span>密码</span><input name="password" type="password" autoComplete="current-password" required minLength={6} placeholder="请输入密码" /></label>
+          <label className="product-field"><span>密码</span><input name="password" type="password" autoComplete="current-password" required minLength={8} placeholder="请输入密码" /></label>
           {error && <p className="product-form-error" role="alert">{error}</p>}
           <button className="product-submit" type="submit" disabled={busy}>{busy ? "正在登录…" : "登录并查看命盘"}</button>
         </form>
@@ -46,7 +46,7 @@ export function OnboardingForm({ busy, error, onRegister, onLogin }: Props) {
           </div>
 
           <div className="product-form-grid">
-            <label className="product-field"><span>设置密码</span><input name="password" type="password" autoComplete="new-password" required minLength={6} placeholder="至少 6 位" /></label>
+            <label className="product-field"><span>设置密码</span><input name="password" type="password" autoComplete="new-password" required minLength={8} placeholder="至少 8 位" /></label>
             <fieldset className="product-field"><legend>性别</legend><div className="product-segmented"><label><input name="gender" type="radio" value="male" defaultChecked /><span>男</span></label><label><input name="gender" type="radio" value="female" /><span>女</span></label></div></fieldset>
           </div>
 

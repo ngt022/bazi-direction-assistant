@@ -1,5 +1,6 @@
-import { ArrowDown, ArrowRight, BarChart3, BookOpenText, Check, Compass, LockKeyhole, Orbit } from "lucide-react";
+import { ArrowRight, BarChart3, Check, LockKeyhole, Orbit } from "lucide-react";
 import Image from "next/image";
+import type { FormEvent, ReactNode } from "react";
 
 const pillars = [
   ["年柱", "庚午", "路旁土"],
@@ -16,7 +17,15 @@ const elements = [
   ["水", 15, "water"],
 ] as const;
 
-export function HeroSection() {
+type Props = {
+  busy: boolean;
+  error: string;
+  onRegister: (event: FormEvent<HTMLFormElement>) => void;
+  onLogin: (event: FormEvent<HTMLFormElement>) => void;
+  children: ReactNode;
+};
+
+export function HeroSection(_props: Props) {
   return (
     <section id="top" className="product-hero" aria-labelledby="product-hero-title">
       <div className="product-hero-ambient" aria-hidden="true">
@@ -25,14 +34,10 @@ export function HeroSection() {
 
       <div className="product-shell product-hero-layout">
         <div className="product-hero-copy">
-          <div className="product-hero-kicker"><span />传统文化 · 结构化排盘 · 可视化分析</div>
-          <h1 id="product-hero-title">让命理，<br />被<span>科学</span>看见</h1>
-          <p className="product-hero-subtitle">把复杂的八字命盘，整理成清晰可读的结构化报告。少一点玄乎，多一点看得懂。</p>
-          <p className="product-hero-description">输入出生信息，即可查看四柱八字、五行分布、十神关系、大运流年与行动建议。内容仅供传统文化研究与娱乐参考。</p>
-          <div className="product-hero-actions">
-            <a href="#start" className="product-cta-primary"><Compass aria-hidden="true" />立即开始排盘<ArrowRight aria-hidden="true" /></a>
-            <a href="#chapters" className="product-cta-secondary"><BookOpenText aria-hidden="true" />先看看报告内容<ArrowDown aria-hidden="true" /></a>
-          </div>
+          <div className="product-hero-kicker"><span />四柱八字 · 五行 · 大运流年</div>
+          <h1 id="product-hero-title">输入出生信息<br />生成<span>命盘报告</span></h1>
+          <p className="product-hero-subtitle">填写出生日期、时间和地点，查看四柱八字、五行分布、十神关系、大运流年与行动建议。</p>
+          <p className="product-hero-description">内容仅供传统文化研究与娱乐参考，不作为人生决策依据。</p>
           <div className="product-trust-row" aria-label="使用说明">
             <span><LockKeyhole aria-hidden="true" />信息不会公开展示</span>
             <span><BarChart3 aria-hidden="true" />结果清晰可读</span>
@@ -40,7 +45,7 @@ export function HeroSection() {
           </div>
         </div>
 
-        <div className="hero-report-preview" aria-label="命盘报告预览">
+        <div className="hero-report-preview">
           <div className="hero-report-topbar">
             <span><Orbit aria-hidden="true" />玄枢命盘报告</span>
             <em>示例预览</em>

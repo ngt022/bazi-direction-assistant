@@ -3,9 +3,6 @@
 import { Menu, Orbit } from "lucide-react";
 
 const navItems = [
-  ["#value", "产品能力"],
-  ["#how", "使用流程"],
-  ["#chapters", "报告内容"],
   ["#start", "开始排盘"],
   ["#faq", "常见问题"],
 ] as const;

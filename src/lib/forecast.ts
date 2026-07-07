@@ -1,7 +1,13 @@
 import { elementLabels } from "./bazi";
-import type { BirthProfile, ElementKey, ForecastMonth, YearForecast } from "./types";
+import type { BirthProfile, ElementKey, ForecastMonth, LuckCycle, YearForecast } from "./types";
 
 const elementCycle: ElementKey[] = ["wood", "fire", "earth", "metal", "water"];
+
+const stemElement: Record<string, ElementKey> = {
+  甲: "wood", 乙: "wood", 丙: "fire", 丁: "fire",
+  戊: "earth", 己: "earth", 庚: "metal", 辛: "metal",
+  壬: "water", 癸: "water",
+};
 
 const themes: Record<ElementKey, string> = {
   wood: "生长与修复",
@@ -35,15 +41,27 @@ const actions: Record<ElementKey, string> = {
   water: "先补信息缺口，再决定是否推进，不急着给自己下结论。",
 };
 
-function pickFocus(profile: BirthProfile, year: number, month: number) {
+function pickFocus(profile: BirthProfile, year: number, month: number, luckCycle?: LuckCycle) {
   const weak = profile.chart.wuxing.weakest[0];
   const day = profile.chart.dayMaster.element;
   const baseIndex = elementCycle.indexOf(weak || day);
-  return elementCycle[(baseIndex + year + month) % elementCycle.length];
+  let offset = year + month;
+
+  // 大运影响: 大运天干五行带来额外偏移
+  if (luckCycle?.ganZhi) {
+    const luckGan = luckCycle.ganZhi[0];
+    const luckElement = stemElement[luckGan];
+    if (luckElement !== undefined) {
+      const luckIndex = elementCycle.indexOf(luckElement);
+      offset += luckIndex;
+    }
+  }
+
+  return elementCycle[(baseIndex + offset) % elementCycle.length];
 }
 
-function buildMonth(profile: BirthProfile, year: number, month: number): ForecastMonth {
-  const focusElement = pickFocus(profile, year, month);
+function buildMonth(profile: BirthProfile, year: number, month: number, luckCycle?: LuckCycle): ForecastMonth {
+  const focusElement = pickFocus(profile, year, month, luckCycle);
   const label = elementLabels[focusElement];
 
   return {
@@ -58,8 +76,16 @@ function buildMonth(profile: BirthProfile, year: number, month: number): Forecas
   };
 }
 
+function getCurrentLuckCycle(profile: BirthProfile, year: number): LuckCycle | undefined {
+  if (!profile.chart.luckCycles?.length) return undefined;
+  return profile.chart.luckCycles.find(
+    (cycle) => year >= cycle.startYear && year <= cycle.endYear,
+  );
+}
+
 export function buildYearForecast(profile: BirthProfile, year = new Date().getFullYear(), month = new Date().getMonth() + 1): YearForecast {
-  const months = Array.from({ length: 12 }, (_, index) => buildMonth(profile, year, index + 1));
+  const luckCycle = getCurrentLuckCycle(profile, year);
+  const months = Array.from({ length: 12 }, (_, index) => buildMonth(profile, year, index + 1, luckCycle));
   const currentMonth = months[Math.min(Math.max(month, 1), 12) - 1];
   const weakLabels = profile.chart.wuxing.weakest.map((item) => elementLabels[item]).join("、") || profile.chart.dayMaster.elementLabel;
   const strongLabels = profile.chart.wuxing.strongest.map((item) => elementLabels[item]).join("、") || profile.chart.dayMaster.elementLabel;

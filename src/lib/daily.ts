@@ -1,7 +1,14 @@
+import { Solar } from "lunar-javascript";
 import { elementLabels } from "./bazi";
 import type { BirthProfile, DailyGuidance, ElementKey } from "./types";
 
 const elementCycle: ElementKey[] = ["wood", "fire", "earth", "metal", "water"];
+
+const stemElement: Record<string, ElementKey> = {
+  甲: "wood", 乙: "wood", 丙: "fire", 丁: "fire",
+  戊: "earth", 己: "earth", 庚: "metal", 辛: "metal",
+  壬: "water", 癸: "water",
+};
 
 const suitableByElement: Record<ElementKey, string[]> = {
   wood: ["学习新内容", "梳理长期目标", "修复沟通", "做成长型计划"],
@@ -34,10 +41,20 @@ function dayOfYear(date: Date) {
 
 export function buildDailyGuidance(profile: BirthProfile, date = new Date()): DailyGuidance {
   const weakest = profile.chart.wuxing.weakest[0];
+
+  // 读取实际日柱天干
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const realDayGan = Solar.fromYmdHms(y, m, d, 0, 0, 0).getLunar().getEightChar().getDayGan();
+  const realDayElement = stemElement[realDayGan] as ElementKey;
+
+  // 交替: 大多数日子用 realDayElement（实时感），每 3 天切一次 weakest（补短板）
   const dayIndex = dayOfYear(date);
-  const focusElement = weakest || elementCycle[dayIndex % elementCycle.length];
-  const supportElement = elementCycle[(elementCycle.indexOf(focusElement) + dayIndex) % elementCycle.length];
-  const todayElement = dayIndex % 2 === 0 ? focusElement : supportElement;
+  const todayElement: ElementKey = dayIndex % 3 === 0
+    ? (weakest || realDayElement)
+    : realDayElement;
+
   const label = elementLabels[todayElement];
 
   return {

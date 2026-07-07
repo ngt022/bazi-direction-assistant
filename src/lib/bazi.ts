@@ -22,6 +22,8 @@ const stemElement: Record<string, ElementKey> = {
   癸: "water",
 };
 
+const yangStems = ["甲", "丙", "戊", "庚", "壬"];
+
 const branchElement: Record<string, ElementKey> = {
   子: "water",
   丑: "earth",
@@ -213,7 +215,7 @@ export function buildBaziChart(input: BaziChartInput): BaziChart {
     balance[stemElement[stem]] += 1;
   });
   Object.values(branches).forEach((branch) => {
-    balance[branchElement[branch]] += 1;
+    balance[branchElement[branch]] += 2;
   });
 
   const dayElement = stemElement[stems.day];
@@ -223,13 +225,28 @@ export function buildBaziChart(input: BaziChartInput): BaziChart {
     day: eightChar.getDayHideGan(),
     time: eightChar.getTimeHideGan(),
   };
+  // 藏干加权: 本气 +0.5, 中气 +0.3, 余气 +0.2
+  Object.values(hiddenStems).forEach((list) => {
+    list.forEach((gan, i) => {
+      const weight = i === 0 ? 0.5 : i === 1 ? 0.3 : 0.2;
+      const element = stemElement[gan];
+      if (element) balance[element] += weight;
+    });
+  });
+
   const hiddenTenGods = {
     year: eightChar.getYearShiShenZhi(),
     month: eightChar.getMonthShiShenZhi(),
     day: eightChar.getDayShiShenZhi(),
     time: eightChar.getTimeShiShenZhi(),
   };
-  const yun = eightChar.getYun(input.gender === "female" ? 0 : 1, 2);
+  // 日主阴阳: 阳干→1(顺排), 阴干→0(逆排)
+  const dayGan = stems.day;
+  const dayIsYang = yangStems.includes(dayGan);
+  const genderCode = input.gender === "female" ? 0 :
+    input.gender === "male" ? 1 :
+    dayIsYang ? 1 : 0;
+  const yun = eightChar.getYun(genderCode, 2);
   const allLuckCycles = yun.getDaYun(9);
   const luckCycles = allLuckCycles
     .filter((cycle) => cycle.getGanZhi())

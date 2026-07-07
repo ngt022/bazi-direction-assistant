@@ -25,6 +25,8 @@ export function QuestionPromptGrid({ questions, onSelect, title = "今天你想�
     onSelect(question);
   }
 
+  if (!questions.length) return null;
+
   return (
     <section className={`question-prompt-section ${compact ? "question-prompt-section--compact" : ""}`}>
       <header><span><MessageCircleMore />继续探索</span><h2>{title}</h2></header>

@@ -1,4 +1,5 @@
 import { FormEvent } from "react";
+import { BarChart3, Compass, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { DisclaimerFooter } from "@/components/site/DisclaimerFooter";
 import { HeroSection } from "@/components/site/HeroSection";
 import { OnboardingForm } from "./OnboardingForm";
@@ -12,6 +13,11 @@ type Props = {
   onRegister: (event: FormEvent<HTMLFormElement>) => void;
   onLogin: (event: FormEvent<HTMLFormElement>) => void;
 };
+
+const bottomNav = [
+  ["#top", Compass, "排盘"],
+  ["#faq", MessageCircleQuestion, "常见问题"],
+] as const;
 
 export function PublicHome(props: Props) {
   return (
@@ -31,6 +37,19 @@ export function PublicHome(props: Props) {
       <FAQSection />
 
       <DisclaimerFooter />
+
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-2 border-t border-[rgba(216,180,142,0.22)] bg-[rgba(9,11,14,0.96)] px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.2)] backdrop-blur xl:hidden">
+        {bottomNav.map(([href, Icon, label]) => (
+          <a
+            key={href}
+            href={href}
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-md text-xs text-[#aaa59b]"
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </a>
+        ))}
+      </nav>
     </main>
   );
 }

@@ -50,12 +50,11 @@ export function buildMobileBaziReport(profile: MobileProfile) {
   const style = elementStyle[dayElement];
   const strongest = chart.wuxing.strongest[0] || dayElement;
   const weakest = chart.wuxing.weakest[0] || dayElement;
-  const weighted = chart.engine?.weightedBalance;
   const total = Object.values(chart.wuxing.balance).reduce((sum, value) => sum + value, 0) || 1;
   const elements = (Object.keys(chart.wuxing.balance) as ElementKey[]).map((key) => ({
     key,
     label: elementLabels[key],
-    value: Math.round(weighted?.[key] ?? (chart.wuxing.balance[key] / total) * 100),
+    value: Math.round((chart.wuxing.balance[key] / total) * 100),
     color: elementColors[key],
     meaning: elementMeaning[key],
   })) satisfies ElementDatum[];

@@ -32,7 +32,6 @@ export function buildValidatedBaziChart(input: BaziChartInput): BaziChart {
     const matchedPillars = (Object.keys(chart.pillars) as ChartPosition[]).filter(
       (position) => comparison[position].chinese === chart.pillars[position],
     ).length;
-    const weighted = calculator.calculateBasicAnalysis().fiveFactors;
 
     return {
       ...chart,
@@ -41,13 +40,6 @@ export function buildValidatedBaziChart(input: BaziChartInput): BaziChart {
         validator: "bazi-calculator-by-alvamind",
         validationStatus: matchedPillars === 4 ? "matched" : "different",
         matchedPillars,
-        weightedBalance: {
-          wood: weighted.WOOD,
-          fire: weighted.FIRE,
-          earth: weighted.EARTH,
-          metal: weighted.METAL,
-          water: weighted.WATER,
-        },
       },
     };
   } catch {

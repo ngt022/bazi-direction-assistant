@@ -74,7 +74,6 @@ export type BaziChart = {
     validator?: "bazi-calculator-by-alvamind";
     validationStatus?: "matched" | "different" | "unavailable";
     matchedPillars?: number;
-    weightedBalance?: ElementBalance;
   };
   nayin: {
     year: string;

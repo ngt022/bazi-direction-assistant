@@ -5,6 +5,7 @@ import { appLimits, trimToLimit } from "@/lib/limits";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { addProfileWithLimit, deleteProfileData, newId, readDb } from "@/lib/store";
 import type { BirthProfile, CalendarType, Gender } from "@/lib/types";
+import { parseBody, tryRoute } from "@/lib/api-error";
 
 function optionalCoordinate(value: unknown) {
   if (value === undefined || value === null || value === "") return undefined;
@@ -13,21 +14,23 @@ function optionalCoordinate(value: unknown) {
 }
 
 export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "请先登录" }, { status: 401 });
-  }
-  const db = await readDb();
-  return NextResponse.json({
-    profiles: db.profiles.filter((profile) => profile.userId === user.id),
+  return tryRoute(async () => {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "请先登录" }, { status: 401 });
+    }
+    const db = await readDb();
+    return NextResponse.json({
+      profiles: db.profiles.filter((profile) => profile.userId === user.id),
+    });
   });
 }
 
 export async function POST(request: Request) {
-  try {
+  return tryRoute(async () => {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+      return NextResponse.json({ ok: false, error: "请先登录" }, { status: 401 });
     }
     const rateLimit = checkRateLimit(
       request,
@@ -38,7 +41,19 @@ export async function POST(request: Request) {
       return rateLimitResponse(rateLimit.resetAt);
     }
 
-    const body = await request.json();
+    const body = await parseBody<{
+      birthDate?: string;
+      birthTime?: string;
+      name?: string;
+      birthPlace?: string;
+      calendarType?: string;
+      isLeapMonth?: boolean;
+      timezone?: string;
+      gender?: string;
+      latitude?: unknown;
+      longitude?: unknown;
+      timeUnknown?: boolean;
+    }>(request);
     const birthDate = String(body.birthDate || "");
     const birthTime = String(body.birthTime || "12:00");
     const name = trimToLimit(String(body.name || user.name || "我的命盘"), appLimits.maxProfileNameChars);
@@ -46,11 +61,11 @@ export async function POST(request: Request) {
     const calendarType = (body.calendarType === "lunar" ? "lunar" : "solar") as CalendarType;
     const isLeapMonth = calendarType === "lunar" && Boolean(body.isLeapMonth);
     const timezone = String(body.timezone || "Asia/Shanghai");
-    const gender = (["male", "female", "other"].includes(body.gender)
+    const gender = (["male", "female", "other"].includes(body.gender!)
       ? body.gender
       : "other") as Gender;
     if (!birthDate) {
-      return NextResponse.json({ error: "请填写出生日期" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "请填写出生日期" }, { status: 400 });
     }
     const profile: BirthProfile = {
       id: newId("profile"),
@@ -77,20 +92,15 @@ export async function POST(request: Request) {
       }),
     };
     await addProfileWithLimit(profile, appLimits.maxProfilesPerUser);
-    return NextResponse.json({ profile });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "保存命盘失败" },
-      { status: 400 },
-    );
-  }
+    return NextResponse.json({ ok: true, data: { profile } });
+  });
 }
 
 export async function DELETE(request: Request) {
-  try {
+  return tryRoute(async () => {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+      return NextResponse.json({ ok: false, error: "请先登录" }, { status: 401 });
     }
     const rateLimit = checkRateLimit(
       request,
@@ -104,15 +114,10 @@ export async function DELETE(request: Request) {
     const url = new URL(request.url);
     const profileId = url.searchParams.get("profileId") || "";
     if (!profileId) {
-      return NextResponse.json({ error: "缺少命盘档案 ID" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "缺少命盘档案 ID" }, { status: 400 });
     }
 
     const deleted = await deleteProfileData({ userId: user.id, profileId });
     return NextResponse.json({ ok: true, deleted });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "删除命盘失败" },
-      { status: 400 },
-    );
-  }
+  });
 }

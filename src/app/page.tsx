@@ -121,7 +121,8 @@ async function postJson<T>(url: string, body?: unknown): Promise<T> {
   if (!response.ok) {
     throw new Error(data.error || "请求失败");
   }
-  return data;
+  // 兼容新旧格式
+  return data.data ?? data;
 }
 
 export default function Home() {

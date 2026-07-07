@@ -4,61 +4,69 @@ import { isRecord, reportTypes, serializedSize, stableHash } from "@/lib/market-
 import { buildBirthReport } from "@/lib/report";
 import { addStoredReport, newId, readDb } from "@/lib/store";
 import type { ReportType, StoredReport } from "@/lib/types";
+import { parseBody, tryRoute } from "@/lib/api-error";
 
 export async function GET(request: Request) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "请先登录" }, { status: 401 });
-  }
+  return tryRoute(async () => {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "请先登录" }, { status: 401 });
+    }
 
-  const url = new URL(request.url);
-  const profileId = url.searchParams.get("profileId");
-  const db = await readDb();
-  if (!profileId) {
-    return NextResponse.json({ reports: db.reports.filter((item) => item.userId === user.id).slice(0, 50) });
-  }
+    const url = new URL(request.url);
+    const profileId = url.searchParams.get("profileId");
+    const db = await readDb();
+    if (!profileId) {
+      return NextResponse.json({ reports: db.reports.filter((item) => item.userId === user.id).slice(0, 50) });
+    }
 
-  const profile = db.profiles.find((item) => item.id === profileId && item.userId === user.id);
-  if (!profile) {
-    return NextResponse.json({ error: "命盘档案不存在" }, { status: 404 });
-  }
+    const profile = db.profiles.find((item) => item.id === profileId && item.userId === user.id);
+    if (!profile) {
+      return NextResponse.json({ ok: false, error: "命盘档案不存在" }, { status: 404 });
+    }
 
-  const type = (url.searchParams.get("type") || "bazi") as ReportType;
-  if (!reportTypes.has(type)) {
-    return NextResponse.json({ error: "不支持的报告类型" }, { status: 400 });
-  }
-  if (url.searchParams.get("history") === "1") {
-    return NextResponse.json({ reports: db.reports.filter((item) => item.userId === user.id && item.profileId === profileId && item.type === type).slice(0, 30) });
-  }
-  if (type !== "bazi") {
-    const latest = db.reports.find((item) => item.userId === user.id && item.profileId === profileId && item.type === type);
-    return latest
-      ? NextResponse.json({ report: latest.content, storedReport: latest })
-      : NextResponse.json({ error: "这份报告还没有生成" }, { status: 404 });
-  }
+    const type = (url.searchParams.get("type") || "bazi") as ReportType;
+    if (!reportTypes.has(type)) {
+      return NextResponse.json({ ok: false, error: "不支持的报告类型" }, { status: 400 });
+    }
+    if (url.searchParams.get("history") === "1") {
+      return NextResponse.json({ reports: db.reports.filter((item) => item.userId === user.id && item.profileId === profileId && item.type === type).slice(0, 30) });
+    }
+    if (type !== "bazi") {
+      const latest = db.reports.find((item) => item.userId === user.id && item.profileId === profileId && item.type === type);
+      return latest
+        ? NextResponse.json({ report: latest.content, storedReport: latest })
+        : NextResponse.json({ ok: false, error: "这份报告还没有生成" }, { status: 404 });
+    }
 
-  return NextResponse.json({ report: buildBirthReport(profile) });
+    return NextResponse.json({ report: buildBirthReport(profile) });
+  });
 }
 
 export async function POST(request: Request) {
-  try {
+  return tryRoute(async () => {
     const user = await getCurrentUser();
-    if (!user) return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    if (!user) return NextResponse.json({ ok: false, error: "请先登录" }, { status: 401 });
 
-    const body = await request.json();
+    const body = await parseBody<{
+      profileId?: string;
+      type?: string;
+      content?: unknown;
+      ruleVersion?: string;
+    }>(request);
     const profileId = String(body.profileId || "");
     const type = String(body.type || "bazi") as ReportType;
     if (!profileId || !reportTypes.has(type)) {
-      return NextResponse.json({ error: "报告档案或类型不正确" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "报告档案或类型不正确" }, { status: 400 });
     }
 
     const db = await readDb();
     const profile = db.profiles.find((item) => item.id === profileId && item.userId === user.id);
-    if (!profile) return NextResponse.json({ error: "命盘档案不存在" }, { status: 404 });
+    if (!profile) return NextResponse.json({ ok: false, error: "命盘档案不存在" }, { status: 404 });
 
     const content = type === "bazi" ? buildBirthReport(profile) : body.content;
     if (!isRecord(content) || serializedSize(content) > 100_000) {
-      return NextResponse.json({ error: "报告内容为空或超过 100KB" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "报告内容为空或超过 100KB" }, { status: 400 });
     }
 
     const stored: StoredReport = {
@@ -74,10 +82,8 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     };
     const saved = await addStoredReport(stored);
-    return NextResponse.json({ report: saved }, { status: saved.id === stored.id ? 201 : 200 });
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "保存报告失败" }, { status: 400 });
-  }
+    return NextResponse.json({ ok: true, data: { report: saved } }, { status: saved.id === stored.id ? 201 : 200 });
+  });
 }
 
 function profileSignatureInput(profile: { birthDate: string; birthTime: string; birthPlace: string; calendarType: string; timeUnknown: boolean }) {

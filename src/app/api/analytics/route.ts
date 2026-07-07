@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { mobileAnalyticsEvents } from "@/lib/mobile/analyticsEvents";
+import { tryRoute } from "@/lib/api-error";
 
 const allowedEvents = new Set<string>(mobileAnalyticsEvents);
 const allowedEnvironments = new Set(["ios_safari", "ios_wechat", "android_chrome", "android_wechat", "other"]);
@@ -27,32 +28,34 @@ function normalizeMetadata(value: unknown) {
 }
 
 export async function POST(request: Request) {
-  const raw = await request.text();
-  if (raw.length > 4096) return NextResponse.json({ error: "埋点数据过大" }, { status: 413 });
+  return tryRoute(async () => {
+    const raw = await request.text();
+    if (raw.length > 4096) return NextResponse.json({ ok: false, error: "埋点数据过大" }, { status: 413 });
 
-  let payload: AnalyticsPayload;
-  try {
-    payload = JSON.parse(raw) as AnalyticsPayload;
-  } catch {
-    return NextResponse.json({ error: "埋点数据格式不正确" }, { status: 400 });
-  }
+    let payload: AnalyticsPayload;
+    try {
+      payload = JSON.parse(raw) as AnalyticsPayload;
+    } catch {
+      return NextResponse.json({ ok: false, error: "埋点数据格式不正确" }, { status: 400 });
+    }
 
-  if (typeof payload.event !== "string" || !allowedEvents.has(payload.event)) {
-    return NextResponse.json({ error: "埋点事件不支持" }, { status: 400 });
-  }
+    if (typeof payload.event !== "string" || !allowedEvents.has(payload.event)) {
+      return NextResponse.json({ ok: false, error: "埋点事件不支持" }, { status: 400 });
+    }
 
-  const normalized = {
-    event: payload.event,
-    appVersion: typeof payload.appVersion === "string" ? payload.appVersion.slice(0, 30) : "unknown",
-    ruleVersion: typeof payload.ruleVersion === "string" ? payload.ruleVersion.slice(0, 40) : "unknown",
-    occurredAt: typeof payload.occurredAt === "string" ? payload.occurredAt.slice(0, 40) : new Date().toISOString(),
-    route: typeof payload.route === "string" ? payload.route.slice(0, 120) : "/",
-    sessionId: typeof payload.sessionId === "string" ? payload.sessionId.slice(0, 80) : "unknown",
-    environment: typeof payload.environment === "string" && allowedEnvironments.has(payload.environment) ? payload.environment : "other",
-    durationMs: typeof payload.durationMs === "number" && Number.isFinite(payload.durationMs) ? Math.max(0, Math.min(payload.durationMs, 120000)) : undefined,
-    metadata: normalizeMetadata(payload.metadata),
-  };
+    const normalized = {
+      event: payload.event,
+      appVersion: typeof payload.appVersion === "string" ? payload.appVersion.slice(0, 30) : "unknown",
+      ruleVersion: typeof payload.ruleVersion === "string" ? payload.ruleVersion.slice(0, 40) : "unknown",
+      occurredAt: typeof payload.occurredAt === "string" ? payload.occurredAt.slice(0, 40) : new Date().toISOString(),
+      route: typeof payload.route === "string" ? payload.route.slice(0, 120) : "/",
+      sessionId: typeof payload.sessionId === "string" ? payload.sessionId.slice(0, 80) : "unknown",
+      environment: typeof payload.environment === "string" && allowedEnvironments.has(payload.environment) ? payload.environment : "other",
+      durationMs: typeof payload.durationMs === "number" && Number.isFinite(payload.durationMs) ? Math.max(0, Math.min(payload.durationMs, 120000)) : undefined,
+      metadata: normalizeMetadata(payload.metadata),
+    };
 
-  console.info("[xuanshu-mobile-event]", JSON.stringify(normalized));
-  return NextResponse.json({ accepted: true }, { status: 202, headers: { "cache-control": "no-store" } });
+    console.info("[xuanshu-mobile-event]", JSON.stringify(normalized));
+    return NextResponse.json({ accepted: true }, { status: 202, headers: { "cache-control": "no-store" } });
+  });
 }

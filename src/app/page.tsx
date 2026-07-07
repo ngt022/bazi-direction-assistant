@@ -322,10 +322,24 @@ export default function Home() {
       await refresh();
       setSelectedProfileId(data.profile.id);
       setActivePanel("report");
+      autoAnalyze(data.profile.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "请检查填写信息后重新生成");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function autoAnalyze(profileId: string) {
+    try {
+      await postJson("/api/questions", {
+        profileId,
+        category: "direction",
+        question: "我的命盘整体情况如何？当前需要注意什么？",
+      });
+      await refresh();
+    } catch {
+      // 静默失败，分析不阻塞主流程
     }
   }
 

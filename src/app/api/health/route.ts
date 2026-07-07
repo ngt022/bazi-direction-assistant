@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { aiConfig, getAiMode } from "@/lib/ai-config";
+import { aiConfig, getAiMode, hasOpenAIKey } from "@/lib/ai-config";
 import { appLimits } from "@/lib/limits";
 import { appId } from "@/lib/site";
 import { tryRoute } from "@/lib/api-error";
@@ -13,7 +13,7 @@ export async function GET() {
       ai_mode: getAiMode(),
       ai: {
         model: aiConfig.model,
-        has_openai_key: aiConfig.hasOpenAIKey,
+        has_openai_key: hasOpenAIKey(),
         force_local: aiConfig.forceLocal,
         fallback_on_error: aiConfig.fallbackOnError,
         openai_timeout_ms: aiConfig.openaiTimeoutMs,

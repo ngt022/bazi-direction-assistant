@@ -3,6 +3,7 @@ import { isAdminUser } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { readDb } from "@/lib/store";
 import { AdminRuleForm } from "./AdminRuleForm";
+import { AdminApiKeyForm } from "./AdminApiKeyForm";
 import styles from "./admin.module.css";
 
 export default async function AdminPage() {
@@ -50,6 +51,16 @@ export default async function AdminPage() {
           <div className={styles.grid2}>
             <DataPanel title="现有规则" count={db.contentRules.length} rows={db.contentRules.slice(0, 8).map((item) => ({ primary: `${item.type} · ${item.version}`, secondary: item.id, time: item.updatedAt, badge: item.status }))} />
             <div className={styles.ruleForm}><AdminRuleForm /></div>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionTitle}>
+            <div><small>AI 配置</small><h2>OpenAI API Key</h2></div>
+            <span>运行时设置，覆盖环境变量</span>
+          </div>
+          <div style={{ maxWidth: 480 }}>
+            <AdminApiKeyForm />
           </div>
         </section>
       </div>

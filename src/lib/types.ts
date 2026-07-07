@@ -301,4 +301,5 @@ export type AppDb = {
   shareImages: StoredShareImage[];
   contentRules: ContentRule[];
   syncStates: SyncState[];
+  openaiApiKey?: string;
 };

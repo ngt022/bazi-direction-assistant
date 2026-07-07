@@ -257,6 +257,17 @@ export async function deleteProfileData(input: { userId: string; profileId: stri
   });
 }
 
+export async function getOpenaiApiKey() {
+  const db = await readDb();
+  return db.openaiApiKey || process.env.OPENAI_API_KEY || "";
+}
+
+export async function setOpenaiApiKey(key: string) {
+  await mutateDb((db) => {
+    db.openaiApiKey = key || undefined;
+  });
+}
+
 export async function addQuestion(question: GuidanceQuestion) {
   await mutateDb((db) => {
     db.questions.push(question);

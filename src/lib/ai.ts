@@ -4,17 +4,30 @@ import { elementLabels, getElementAdvice } from "./bazi";
 import type { BirthProfile, GuidanceQuestion, PublicUser, QuestionCategory } from "./types";
 
 let client: OpenAI | null = null;
+let currentKey = "";
 
-function getOpenAIClient() {
+async function getOpenAIClient() {
   if (getAiMode() !== "openai") {
     return null;
   }
-  if (!client) {
+
+  // 读取运行时 key（store 优先，env fallback）
+  const { getOpenaiApiKey } = await import("./store");
+  const key = await getOpenaiApiKey();
+
+  if (!key) {
+    return null;
+  }
+
+  // key 变化时重建 client
+  if (!client || key !== currentKey) {
+    currentKey = key;
     client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: key,
       timeout: aiConfig.openaiTimeoutMs,
     });
   }
+
   return client;
 }
 
@@ -63,7 +76,7 @@ export async function generateGuidance(input: {
   question: string;
   category: QuestionCategory;
 }): Promise<Pick<GuidanceQuestion, "answer" | "usage">> {
-  const openai = getOpenAIClient();
+  const openai = await getOpenAIClient();
   const model = aiConfig.model;
 
   if (!openai) {
